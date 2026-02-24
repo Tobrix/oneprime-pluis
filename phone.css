@@ -1,0 +1,855 @@
+/* --- FINÁLNÍ DESIGN SE ZAROVNANÝM SEZNAMEM A DESIGN BRANDEM --- */
+@media (max-width: 900px) {
+    
+    /* Skrytí scrollbarů všude */
+    * {
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+    }
+    ::-webkit-scrollbar {
+        display: none !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+
+        /* 1. Oprava skrytí - skryjeme jen text, ne hvězdičku */
+    .epg-channel-sticky span:not(.fav-btn-epg) {
+        display: none !important;
+    }
+    
+    /* 2. Vynucení zobrazení hvězdičky i na mobilu */
+
+    /* --- PORTRÉT --- */
+    @media (orientation: portrait) {
+        .app-layout { flex-direction: column !important; }
+        
+        .player-area {
+            height: 32vh !important;
+            flex-shrink: 0; /* Přehrávač se nesmí smrsknout */
+            padding: 15px 15px 5px 15px !important; 
+            box-sizing: border-box;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-top: calc(env(safe-area-inset-top) + 5px) !important;
+            flex-shrink: 0;
+        }
+
+        .sidebar {
+            flex: 1 !important;
+            width: 100vw !important;
+            padding: 0 15px !important; 
+            box-sizing: border-box;
+            display: flex !important;
+            flex-direction: column;
+            overflow: hidden;
+            background: #000 !important;
+            border-left: none !important;
+
+        }
+
+        /* --- DESIGN BRANDU JAKO RÁMEČKU (PORTRÉT) --- */
+        .brand {
+            display: flex !important;
+            align-items: center!important;
+            justify-content: center!important;
+            padding: 5px 5px !important;
+            margin: 5px 0 5px 0 !important; /* Mezera od videa i od seznamu */
+            background: rgba(255, 255, 255, 0.07) !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 1rem !important;
+            color: var(--accent) !important; /* Můžeš nechat bílou nebo dát barvu */
+            text-align: center;
+            flex-shrink: 0;
+        }
+        #video-wrapper {
+        position: relative;
+        width: 100% !important;
+        height: 100% !important;
+        border-radius: 20px !important;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        border: 1px solid rgba(255,255,255,0.1);
+        background: #000;
+        }
+
+        /* --- OVLÁDACÍ LIŠTA --- */
+        .custom-controls { 
+            padding: 5px 10px !important; 
+            width: 100% !important;
+            box-sizing: border-box !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9)) !important;
+            
+        }
+
+        .controls-main { 
+            display: flex !important;
+            /* Změna na center zajistí, že ikony budou uprostřed šířky přehrávače */
+            justify-content: center !important; 
+            align-items: center !important;
+            gap: 12px !important; /* Na středu snesou ikony trochu větší mezery */
+            width: 100% !important;
+            /* Zmenšíme lištu, ale origin nastavíme na střed (center) */
+            transform: scale(0.85);
+            transform-origin: center bottom !important;
+            margin: 0 auto !important;
+        }
+        
+
+        #fullscreen-btn {
+            margin-left: auto !important;
+            padding-right: 10px !important;
+        }
+
+        /* Původní řádek smaž a nahraď tímto: */
+        #current-quality-label {
+            display: none !important;
+        }
+
+        /* Upravený kontejner zvuku pro mobil */
+        .volume-slider-container {
+            /* Přepíšeme to display:none, aby reagoval na JS třídu .show */
+            display: none; 
+            min-width: 145px !important;
+            width: 145px !important;
+            bottom: calc(100% + 20px) !important;
+            z-index: 99999 !important;
+            background: rgba(15, 15, 15, 1) !important;
+        }
+
+        /* Vynucení zobrazení, když JS přidá .show */
+        .volume-slider-container.show {
+            display: flex !important;
+        }
+
+        /* --- SEZNAM KANÁLŮ --- */
+        #channels-container {
+            flex: 1 !important;
+            width: 100% !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y !important;
+            /* NOVĚ: Extra místo na konci seznamu (safe-area + 40px navíc), aby šel poslední kanál hezky vylovit */
+            padding-bottom: calc(env(safe-area-inset-bottom) + 20px) !important;
+            padding-bottom: env(safe-area-inset-bottom) !important;
+        }
+
+        .channel-item {
+            display: flex !important;
+            padding: 12px !important;
+            margin: 8px 0 !important; 
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .channel-item img {
+            width: 60px !important;
+            height: 35px !important;
+            margin-right: 12px;
+            object-fit: contain;
+        }
+
+        #search-box { display: none !important; }
+
+        video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        /* Název pořadu (např. Snídaně s novou) */
+        #current-program-title {
+            font-size: 0.9rem !important; /* Původně 1.5rem */
+            margin-bottom: 2px !important;
+            
+            
+        }
+
+        /* Zmenšení tlačítka "Více informací" */
+        #show-more-btn {
+            padding: 4px 10px !important; /* Menší vnitřní okraj */
+            font-size: 0.7rem !important;  /* Menší text */
+            margin-top: 2px !important;    /* Menší mezera nad tlačítkem */
+            border-radius: 12px !important; /* Trochu kulatější pro mobil */
+            
+            
+            /* Zrušíme to velké zvětšení při dotyku, aby to na mobilu nelítalo */
+            transform: scale(1) !important; 
+        }
+        
+        /* Zmenšení mezery v celém kontejneru nad timeline */
+        .program-info-container {
+            margin-bottom: 1px !important;
+            gap: 0px !important;
+            position: relative !important;
+            z-index: 0 !important;
+        }
+
+        .overlay-bottom {
+            position: relative !important;
+            z-index: 10 !important; /* Mnohem méně než dropdown */
+            gap: 0px !important;
+        }
+
+        /* Přepneme rozložení na vertikální nebo velmi kompaktní horizontální */
+        .preview-content-horizontal {
+            gap: 12px !important;          /* Menší mezera mezi obrázkem a textem */
+        }
+
+        /* Zmenšení náhledového obrázku */
+        .preview-image-container-new {
+            position: relative;
+            display: flex !important;
+            flex-direction: column !important; /* Prvky pod sebou */
+            gap: 5px !important;               /* Mezera mezi fotkou a časem */
+            width: 120px !important;
+            height: auto !important;           /* Výška se přizpůsobí obsahu (fotka + čas) */
+            background: none !important;
+            border: none !important;
+            overflow: visible !important;      /* Aby čas pod fotkou nebyl oříznutý */
+        }
+
+        /* Samotná fotka */
+        #details-program-img {
+            width: 120px !important;
+            height: 68px !important;
+            border-radius: 8px !important;
+            object-fit: cover;
+        }
+
+        /* Úprava textů uvnitř */
+        #details-program-title {
+            font-size: 1rem !important;    /* Menší nadpis v okně */
+            margin-bottom: 4px !important;
+        }
+
+        #details-program-text {
+            font-size: 0.75rem !important; /* Menší popis */
+            line-height: 1.4 !important;
+            max-height: 80px !important;   /* Omezíme délku textu, zbytek se odscrolluje */
+        }
+
+        .preview-time-badge {
+            position: static !important;       /* Zruší vznášení nad fotkou */
+            font-size: 9px !important;
+            padding: 2px 0 !important;         /* Minimální padding */
+            text-align: center !important;     /* Vycentrování pod fotkou */
+            width: 100% !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;       /* Odstranění stínu, pokud tam byl */
+        }
+
+            /* --- OPRAVA SKÁKÁNÍ LIŠTY PŘI ZMĚNĚ LIVE/ZÁZNAM --- */
+        #status-msg {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            
+            /* PEVNÁ ŠÍŘKA: Nastavíme dostatek místa pro nejdelší slovo (ZÁZNAM) */
+            width: 70px !important; 
+            
+            /* Změníme padding, aby text nebyl nalepený na okrajích, 
+            ale šířka zůstala fixní díky box-sizing */
+            padding: 2px 4px !important;
+            font-size: 0.65rem !important;
+            
+            /* Zamezíme zalamování textu */
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Ujistíme se, že tečka zůstane na místě */
+        .dot {
+            flex-shrink: 0 !important;
+        }
+
+        .quality-dropdown {
+            min-width: 145px !important;
+            width: 145px !important;
+            padding: 6px !important;
+            /* Posunuto výše nad kuličku */
+            bottom: calc(100% + 20px) !important; 
+            border-radius: 10px !important;
+            
+            /* Extrémní z-index pro přebití timeline */
+            z-index: 99999 !important; 
+            /* Vynucení neprůhlednosti, aby timeline neprosvítala skrze dropdown */
+            background: rgba(15, 15, 15, 1) !important; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+        }
+
+        /* Nadpis "Kvalita obrazu" */
+        .dropdown-header {
+            padding: 6px 10px !important;
+            font-size: 0.65rem !important;
+            margin-bottom: 2px !important;
+            letter-spacing: 0.5px !important;
+            /* Zajištění jednoho řádku */
+            white-space: nowrap !important; 
+            overflow: hidden !important;
+            text-overflow: ellipsis;
+        }
+
+        /* Jednotlivé položky (1080p, 720p...) */
+        .quality-option {
+            padding: 8px 10px !important;
+            font-size: 0.8rem !important;
+            border-radius: 6px !important;
+            /* Také pro jistotu v jednom řádku */
+            white-space: nowrap !important;
+        }
+
+        /* Ikona fajfky nebo tečky u aktivní kvality */
+        .quality-option.active::after {
+            width: 5px !important;
+            height: 5px !important;
+            flex-shrink: 0; /* Aby se tečka nedeformovala */
+        }
+        
+        .quality-option:hover {
+            transform: none !important;
+        }
+
+        .quality-wrapper {
+            position: relative !important;
+            z-index: 9000 !important;
+        }
+
+        /* Snížíme prioritu kuličky a čáry na mobilu, aby neprolézaly */
+        .progress-bar, 
+        .progress-bar::after, 
+        .progress-bar-live, 
+        .progress-container {
+            /* Toto zajistí, že čára ani kulička nebudou mít šanci "vylézt" nahoru */
+            z-index: 0 !important; 
+        }
+
+        .quality-dropdown, .volume-slider-container {
+            /* Změna z +20px na +5px nebo pevnou hodnotu */
+            bottom: calc(100% + 10px) !important; 
+        }
+
+        /* Pokud je ikona v nějakém obalu, který ji vycentroval, zrušíme stín i jemu */
+        .indicator-content {
+            box-shadow: none !important;
+            background: none !important;
+            
+        }
+
+        /* EPG PRO IPHONE NA VÝŠKU - Přes celou šířku */
+        #epg-grid-overlay {
+            position: fixed !important;
+            left: -40px !important;
+            right: -40px !important;
+            bottom: 26px !important;
+            width: auto !important;
+            height: 50vh !important;
+            display: none; 
+            z-index: 999999 !important; /* Extrémní hodnota pro jistotu */
+        }
+
+        /* Přidej/uprav v media query pro mobil */
+
+        .epg-row {
+            display: flex !important;
+            align-items: center !important; /* Vycentruje vše v řádku (logo i mřížku pořadů) */
+            height: 60px !important;       /* Nastav pevnou výšku, aby mělo co centrovat */
+            min-height: 60px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            overflow: visible !important;
+        }
+
+        /* Zúžení levé strany na mobilu */
+        .epg-time-spacer, 
+        .epg-channel-sticky {
+            width: 70px !important;
+            min-width: 70px !important;
+        }
+
+        /* Skrytí názvu kanálu, aby se to tam nepletlo a nezalamovalo */
+        .epg-channel-sticky span {
+            display: none !important;
+        }
+
+        /* Logo na střed */
+        .epg-channel-sticky {
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+
+        .epg-channel-sticky img {
+            margin-right: 0 !important; /* Zruší mezeru, která tam zbyla po schovaném textu */
+        }
+
+        .epg-preview-popup {
+            display: none !important;
+        }
+
+        #epg-grid-overlay.show {
+            display: flex !important;
+        }
+
+        .epg-grid-scroll-area { 
+            display: block !important;    
+            -webkit-overflow-scrolling: touch; 
+            width: 100% !important;
+            border-bottom-left-radius: 15px !important;
+            border-bottom-right-radius: 15px !important;
+            overflow: auto !important;
+        }
+        
+        #epg-rows-container {
+            width: fit-content !important; 
+            min-width: 100%;
+        }
+
+        #video-wrapper {
+            overflow: hidden !important;
+            border-radius: 20px !important;
+        }
+
+        /* Třída, kterou přidáme pomocí JS, když se otevře EPG */
+        body.epg-phone-open #video-wrapper {
+            overflow: visible !important;
+        }
+
+    }
+
+    /* --- LANDSCAPE --- */
+    @media (orientation: landscape) {
+
+        .app-layout { 
+        display: flex !important;
+        flex-direction: row !important;
+        /* Použijeme pevných 100% místo vh, které na mobilech zlobí */
+        height: 100% !important; 
+        min-height: 100% !important;
+        position: fixed !important;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow: hidden !important;
+        background: #000 !important;
+    }
+
+        /* --- LEVÁ STRANA: PŘEHRÁVAČ --- */
+        .player-area {
+        height: 100% !important;
+        width: 65vw !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        background: #000 !important;
+        display: flex !important;
+        /* TADY JE ZMĚNA: Zarovnáme na začátek (nahoru), ne na střed */
+        flex-direction: column !important;
+        justify-content: flex-start !important; 
+        align-items: center !important;
+        position: relative;
+        overflow: hidden !important;
+    }
+        
+        #video-wrapper {
+            position: absolute !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 0 !important; /* Zruší zaoblení */
+            border: none !important;     /* Zruší rámeček */
+            box-shadow: none !important; /* Zruší stín */
+            background: #000;
+        }
+
+        video {
+            /* Změna na 'contain' zajistí, že uvidíš VŽDY celé video bez ořezu */
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important; 
+            max-height: 100vh !important;
+        }
+
+        /* --- PRAVÁ STRANA: SEZNAM KANÁLŮ --- */
+        /* Aby brand mohl jít až úplně nahoru, musíme sidebaru sebrat horní padding */
+        .sidebar {
+            height: 100% !important;   /* Sidebar musí mít výšku 100% */
+            display: flex !important;   /* Aby vnitřní prvky fungovaly s flex-grow */
+            flex-direction: column !important;
+            padding-top: 0 !important;
+            padding-right: 15px !important;
+            padding-bottom: 0 !important; /* ZMĚNA: Z 10px na 0, aby seznam dojel až dolů */
+            padding-left: 15px !important;
+            background: #000 !important;
+            overflow: hidden !important; /* Sidebar jako takový nesmí scrollovat */
+        }
+
+        /* Brand v landscape (nad seznamem) */
+        .brand {
+            display: flex !important;
+            align-items: center!important;
+            justify-content: center!important;
+            padding: 5px 5px !important;
+            margin: 5px 0 5px 0 !important; /* Mezera od videa i od seznamu */
+            background: rgba(255, 255, 255, 0.07) !important;
+            border-radius: 15px !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 1rem !important;
+            color: var(--accent) !important; /* Můžeš nechat bílou nebo dát barvu */
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        /* --- OVLÁDACÍ LIŠTA --- */
+        .custom-controls { 
+            padding: 5px 10px !important; 
+            width: 100% !important;
+            box-sizing: border-box !important;
+            left: 0 !important;
+            bottom: 0 !important;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9)) !important;
+        }
+
+        .controls-main { 
+            display: flex !important;
+            /* Změna na center zajistí, že ikony budou uprostřed šířky přehrávače */
+            justify-content: center !important; 
+            align-items: center !important;
+            gap: 12px !important; /* Na středu snesou ikony trochu větší mezery */
+            width: 100% !important;
+            /* Zmenšíme lištu, ale origin nastavíme na střed (center) */
+            transform: scale(0.85);
+            transform-origin: center bottom !important;
+            margin: 0 auto !important;
+        }
+        
+
+        #fullscreen-btn {
+            margin-left: auto !important;
+            padding-right: 10px !important;
+        }
+
+        /* Původní řádek smaž a nahraď tímto: */
+        #current-quality-label {
+            display: none !important;
+        }
+
+        /* Upravený kontejner zvuku pro mobil */
+        .volume-slider-container {
+            /* Přepíšeme to display:none, aby reagoval na JS třídu .show */
+            display: none; 
+            min-width: 145px !important;
+            width: 145px !important;
+            bottom: calc(100% + 20px) !important;
+            z-index: 99999 !important;
+            background: rgba(15, 15, 15, 1) !important;
+        }
+
+        /* Vynucení zobrazení, když JS přidá .show */
+        .volume-slider-container.show {
+            display: flex !important;
+        }
+
+        /* --- SEZNAM KANÁLŮ --- */
+        #channels-container {
+            flex: 1 !important;
+            width: 100% !important; /* Musí být 100% šířka rodiče */
+            overflow-y: auto !important;
+            overflow-x: hidden !important; /* ZÁKAZ pohybu do stran v seznamu */
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y !important; /* Povolí POUZE svislý pohyb prstem */
+        }
+
+        .channel-item {
+            display: flex !important;
+            padding: 12px !important;
+            margin: 8px 0 !important; 
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .channel-item img {
+            width: 60px !important;
+            height: 35px !important;
+            margin-right: 12px;
+            object-fit: contain;
+        }
+
+        #search-box { display: none !important; }
+
+        video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain !important;
+        }
+
+        /* Název pořadu (např. Snídaně s novou) */
+        #current-program-title {
+            font-size: 0.9rem !important; /* Původně 1.5rem */
+            margin-bottom: 2px !important;
+            
+            
+        }
+
+        /* Zmenšení tlačítka "Více informací" */
+        #show-more-btn {
+            padding: 4px 10px !important; /* Menší vnitřní okraj */
+            font-size: 0.7rem !important;  /* Menší text */
+            margin-top: 2px !important;    /* Menší mezera nad tlačítkem */
+            border-radius: 12px !important; /* Trochu kulatější pro mobil */
+            
+            
+            /* Zrušíme to velké zvětšení při dotyku, aby to na mobilu nelítalo */
+            transform: scale(1) !important; 
+        }
+        
+        /* Zmenšení mezery v celém kontejneru nad timeline */
+        .program-info-container {
+            margin-bottom: 1px !important;
+            gap: 0px !important;
+            position: relative !important;
+            z-index: 0 !important;
+        }
+
+        .overlay-bottom {
+            position: relative !important;
+            z-index: 10 !important; /* Mnohem méně než dropdown */
+            gap: 0px !important;
+        }
+
+        /* Přepneme rozložení na vertikální nebo velmi kompaktní horizontální */
+        .preview-content-horizontal {
+            gap: 12px !important;          /* Menší mezera mezi obrázkem a textem */
+        }
+
+        /* Zmenšení náhledového obrázku */
+        .preview-image-container-new {
+            position: relative;
+            display: flex !important;
+            flex-direction: column !important; /* Prvky pod sebou */
+            gap: 5px !important;               /* Mezera mezi fotkou a časem */
+            width: 120px !important;
+            height: auto !important;           /* Výška se přizpůsobí obsahu (fotka + čas) */
+            background: none !important;
+            border: none !important;
+            overflow: visible !important;      /* Aby čas pod fotkou nebyl oříznutý */
+        }
+
+        /* Samotná fotka */
+        #details-program-img {
+            width: 120px !important;
+            height: 68px !important;
+            border-radius: 8px !important;
+            object-fit: cover;
+        }
+
+        /* Úprava textů uvnitř */
+        #details-program-title {
+            font-size: 1rem !important;    /* Menší nadpis v okně */
+            margin-bottom: 4px !important;
+        }
+
+        #details-program-text {
+            font-size: 0.75rem !important; /* Menší popis */
+            line-height: 1.4 !important;
+            max-height: 80px !important;   /* Omezíme délku textu, zbytek se odscrolluje */
+        }
+
+        .preview-time-badge {
+            position: static !important;       /* Zruší vznášení nad fotkou */
+            font-size: 9px !important;
+            padding: 2px 0 !important;         /* Minimální padding */
+            text-align: center !important;     /* Vycentrování pod fotkou */
+            width: 100% !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;       /* Odstranění stínu, pokud tam byl */
+        }
+
+            /* --- OPRAVA SKÁKÁNÍ LIŠTY PŘI ZMĚNĚ LIVE/ZÁZNAM --- */
+        #status-msg {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            
+            /* PEVNÁ ŠÍŘKA: Nastavíme dostatek místa pro nejdelší slovo (ZÁZNAM) */
+            width: 70px !important; 
+            
+            /* Změníme padding, aby text nebyl nalepený na okrajích, 
+            ale šířka zůstala fixní díky box-sizing */
+            padding: 2px 4px !important;
+            font-size: 0.65rem !important;
+            
+            /* Zamezíme zalamování textu */
+            white-space: nowrap !important;
+            flex-shrink: 0 !important;
+        }
+
+        /* Ujistíme se, že tečka zůstane na místě */
+        .dot {
+            flex-shrink: 0 !important;
+        }
+
+        .quality-dropdown {
+            min-width: 145px !important;
+            width: 145px !important;
+            padding: 6px !important;
+            /* Posunuto výše nad kuličku */
+            bottom: calc(100% + 20px) !important; 
+            border-radius: 10px !important;
+            
+            /* Extrémní z-index pro přebití timeline */
+            z-index: 99999 !important; 
+            /* Vynucení neprůhlednosti, aby timeline neprosvítala skrze dropdown */
+            background: rgba(15, 15, 15, 1) !important; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8) !important;
+        }
+
+        /* Nadpis "Kvalita obrazu" */
+        .dropdown-header {
+            padding: 6px 10px !important;
+            font-size: 0.65rem !important;
+            margin-bottom: 2px !important;
+            letter-spacing: 0.5px !important;
+            /* Zajištění jednoho řádku */
+            white-space: nowrap !important; 
+            overflow: hidden !important;
+            text-overflow: ellipsis;
+        }
+
+        /* Jednotlivé položky (1080p, 720p...) */
+        .quality-option {
+            padding: 8px 10px !important;
+            font-size: 0.8rem !important;
+            border-radius: 6px !important;
+            /* Také pro jistotu v jednom řádku */
+            white-space: nowrap !important;
+        }
+
+        /* Ikona fajfky nebo tečky u aktivní kvality */
+        .quality-option.active::after {
+            width: 5px !important;
+            height: 5px !important;
+            flex-shrink: 0; /* Aby se tečka nedeformovala */
+        }
+        
+        .quality-option:hover {
+            transform: none !important;
+        }
+
+        .quality-wrapper {
+            position: relative !important;
+            z-index: 9000 !important;
+        }
+
+        /* Snížíme prioritu kuličky a čáry na mobilu, aby neprolézaly */
+        .progress-bar, 
+        .progress-bar::after, 
+        .progress-bar-live, 
+        .progress-container {
+            /* Toto zajistí, že čára ani kulička nebudou mít šanci "vylézt" nahoru */
+            z-index: 0 !important; 
+        }
+
+        .quality-dropdown, .volume-slider-container {
+            /* Změna z +20px na +5px nebo pevnou hodnotu */
+            bottom: calc(100% + 10px) !important; 
+        }
+
+        /* Pokud je ikona v nějakém obalu, který ji vycentroval, zrušíme stín i jemu */
+        .indicator-content {
+            box-shadow: none !important;
+            background: none !important;
+            
+        }
+
+        /* EPG PRO IPHONE NA VÝŠKU - Přes celou šířku */
+        #epg-grid-overlay {
+            position: fixed !important;
+            left: -40px !important;
+            right: -40px !important;
+            bottom: 26px !important;
+            width: auto !important;
+            height: 80vh !important;
+            display: none; 
+            z-index: 999999 !important; /* Extrémní hodnota pro jistotu */
+        }
+
+        /* Přidej/uprav v media query pro mobil */
+
+        .epg-row {
+            display: flex !important;
+            align-items: center !important; /* Vycentruje vše v řádku (logo i mřížku pořadů) */
+            height: 60px !important;       /* Nastav pevnou výšku, aby mělo co centrovat */
+            min-height: 60px !important;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+            overflow: visible !important;
+        }
+
+        /* Zúžení levé strany na mobilu */
+        .epg-time-spacer, 
+        .epg-channel-sticky {
+            width: 70px !important;
+            min-width: 70px !important;
+        }
+
+        /* Skrytí názvu kanálu, aby se to tam nepletlo a nezalamovalo */
+        .epg-channel-sticky span {
+            display: none !important;
+        }
+
+        /* Logo na střed */
+        .epg-channel-sticky {
+            justify-content: center !important;
+            padding: 0 !important;
+        }
+
+        .epg-channel-sticky img {
+            margin-right: 0 !important; /* Zruší mezeru, která tam zbyla po schovaném textu */
+        }
+
+        .epg-preview-popup {
+            display: none !important;
+        }
+
+        #epg-grid-overlay.show {
+            display: flex !important;
+        }
+
+        .epg-grid-scroll-area { 
+            display: block !important;    
+            -webkit-overflow-scrolling: touch; 
+            width: 100% !important;
+            border-bottom-left-radius: 15px !important;
+            border-bottom-right-radius: 15px !important;
+            overflow: auto !important;
+        }
+        
+        #epg-rows-container {
+            width: fit-content !important; 
+            min-width: 100%;
+        }
+
+        #video-wrapper {
+            overflow: hidden !important;
+            border-radius: 20px !important;
+        }
+
+        /* Třída, kterou přidáme pomocí JS, když se otevře EPG */
+        body.epg-phone-open #video-wrapper {
+            overflow: visible !important;
+        }
+        
+    }
+
+
+}
+
+

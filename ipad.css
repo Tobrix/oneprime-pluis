@@ -1,0 +1,209 @@
+/* --- CÍLENÍ POUZE NA IPAD NA ŠÍŘKU (LANDSCAPE) --- */
+@media only screen 
+  and (min-device-width: 768px) 
+  and (max-device-width: 1366px) 
+  and (orientation: landscape) {
+
+    body, html, .app-layout {
+        height: 100dvh !important;
+        flex-direction: row !important; /* Vynutí video vlevo, sidebar vpravo */
+    }
+
+    .player-area {
+        height: 100% !important;
+        flex: 1 !important;
+    }
+
+    .sidebar {
+        width: 370px !important;
+        height: 100% !important;
+        padding-top: env(safe-area-inset-top) !important;
+    }
+
+    /* OPRAVY PRO SAFARI LIŠTY */
+    .custom-controls {
+        padding-top: calc(env(safe-area-inset-top) + 20px) !important;
+    }
+
+    .overlay-header {
+        margin-top: 15px !important;
+    }
+
+    /* EPG PRO IPAD NA ŠÍŘKU - Musí respektovat sidebar */
+    #epg-grid-overlay {
+        position: fixed !important;
+        left: 20px !important;
+        right: 390px !important; /* Šířka sidebaru 370px + 20px mezera */
+        bottom: 110px !important;
+        height: 60vh !important;
+        width: auto !important;
+        display: none;
+        z-index: 9999;
+        
+    }
+
+    #epg-grid-overlay.show {
+        display: flex !important;
+    }
+
+    .epg-grid-scroll-area { 
+        display: block !important;    
+        -webkit-overflow-scrolling: touch; 
+        width: 100% !important;
+        border-bottom-left-radius: 15px !important;
+        border-bottom-right-radius: 15px !important;
+        overflow: auto !important;
+    }
+
+
+    
+    /* ZTENČENÉ INFO MENU A OPRAVA SCROLLOVÁNÍ */
+    .epg-preview-popup {
+        padding: 12px 15px !important;
+        top: -5px !important;
+        max-height: 140px !important;
+        /* KLÍČOVÁ OPRAVA: Povolí doteky a scrollování */
+        pointer-events: auto !important; 
+        display: none;
+    }
+
+    .epg-preview-popup.show {
+        display: block !important;
+    }
+
+    .preview-image-container-new {
+        width: 160px !important;
+        height: 90px !important;
+    }
+
+    #preview-title {
+        font-size: 16px !important;
+        margin-bottom: 4px !important;
+    }
+
+    /* SCROLLOVATELNÝ TEXT POPISU */
+    #preview-desc {
+        font-size: 13px !important;
+        line-height: 1.4 !important;
+        max-height: 65px !important; 
+        overflow-y: auto !important; 
+        display: block !important;    
+        padding-right: 8px;
+        -webkit-overflow-scrolling: touch; /* Plynulý scroll na iOS */
+    }
+
+    .preview-content-horizontal {
+        gap: 15px !important;
+        align-items: center !important;
+    }
+
+}
+
+/* --- CÍLENÍ NA IPAD NA VÝŠKU (PORTRAIT) --- */
+@media only screen 
+  and (min-device-width: 768px) 
+  and (max-device-width: 1366px) 
+  and (orientation: portrait) {
+
+    body, html, .app-layout {
+        height: 100dvh !important;
+        flex-direction: column !important; /* Video nahoře, sidebar dole */
+    }
+
+    .player-area {
+        height: 40vh !important;
+        width: 100vw !important;
+        flex-shrink: 0;
+        z-index: 100 !important; /* Vyšší než sidebar */
+        padding-top: env(safe-area-inset-top) !important;
+    }
+
+    .sidebar {
+        height: 60vh !important;
+        width: 100vw !important;
+        padding-top: 10px !important;
+    }
+
+    /* Odsazení prvků v přehrávači pod lištou Safari */
+    .custom-controls {
+        padding-top: calc(env(safe-area-inset-top) + 10px) !important;
+    }
+
+    .overlay-header {
+        margin-top: calc(env(safe-area-inset-top) + 5px) !important;
+    }
+
+    /* EPG PRO IPAD NA VÝŠKU - Přes celou šířku */
+    #epg-grid-overlay {
+        position: fixed !important;
+        left: -50px !important;
+        right: -50px !important;
+        bottom: 26px !important;
+        width: auto !important;
+        height: 50vh !important;
+        display: none; 
+        z-index: 999999 !important; /* Extrémní hodnota pro jistotu */
+    }
+
+
+    
+    #epg-grid-overlay.show {
+        display: flex !important;
+    }
+
+    .epg-grid-scroll-area { 
+        display: block !important;    
+        -webkit-overflow-scrolling: touch; 
+        width: 100% !important;
+        border-bottom-left-radius: 15px !important;
+        border-bottom-right-radius: 15px !important;
+        overflow: auto !important;
+    }
+    
+    #epg-rows-container {
+        width: fit-content !important; 
+        min-width: 100%;
+    }
+
+    /* INFO PANEL UMÍSTĚNÝ POD MŘÍŽKOU */
+    .epg-preview-popup {
+        position: absolute !important;
+        top: auto !important;
+        bottom: -10px !important; /* Umístění těsně pod mřížku */
+        left: 0 !important;
+        right: 0 !important;
+        transform: translateY(100%) !important; /* Posune panel o jeho výšku SMĚREM DOLŮ */
+        width: 100% !important;
+        pointer-events: auto !important; /* Povolení scrollování v textu */
+        padding: 15px !important;
+        display: none;
+        opacity: 0;
+        z-index: 999999 !important; /* Extrémní hodnota pro jistotu */
+    }
+
+    .epg-preview-popup.show {
+        display: block !important;
+        opacity: 1 !important;
+    }
+
+    /* Scroll v popisu pro Portrait */
+    #preview-desc {
+        max-height: 80px !important;
+        overflow-y: auto !important;
+        display: block !important;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    
+    /* Standardně nechte ořezávání zapnuté, aby rohy fungovaly */
+    #video-wrapper {
+        overflow: hidden !important;
+        border-radius: 20px !important;
+    }
+
+    /* Třída, kterou přidáme pomocí JS, když se otevře EPG */
+    body.epg-open #video-wrapper {
+        overflow: visible !important;
+    }
+    
+}

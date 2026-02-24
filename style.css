@@ -1,0 +1,833 @@
+:root {
+    --bg: #050505;
+    --sidebar-bg: #111111;
+    --card-bg: #1a1a1a;
+    --accent: #e50914;
+    --text: #ffffff;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body, html {
+    height: 100vh; width: 100vw;
+    font-family: 'Inter', sans-serif;
+    background: var(--bg); color: var(--text);
+    overflow: hidden;
+}
+
+.app-layout { display: flex; height: 100vh; width: 100vw; }
+
+/* --- PLAYER AREA --- */
+.player-area { flex: 1; display: flex; flex-direction: column; background: #000; position: relative; }
+.video-section { flex: 1; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
+video { width: 100%; height: 100%; object-fit: contain; }
+/* --- SKRYTÍ KURZORU PŘI NEAKTIVITĚ --- */
+
+/* Když je wrapper označen jako neaktivní, skryjeme kurzor všude uvnitř */
+#video-wrapper.user-inactive, 
+#video-wrapper.user-inactive * {
+    cursor: none !important;
+}
+
+/* Specificky pro fullscreen režim, aby prohlížeč kurzor nevynutil */
+#video-wrapper:fullscreen.user-inactive {
+    cursor: none !important;
+}
+
+/* --- OVLÁDACÍ PRVKY (OVERLAY) --- */
+:fullscreen .custom-controls.controls-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-controls {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.7) 0%, transparent 25%, transparent 60%, rgba(0,0,0,0.9) 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 30px;
+    z-index: 20;
+    opacity: 1;
+    transition: opacity 0.4s ease-in-out;
+}
+
+
+
+.overlay-header { display: flex; align-items: center; gap: 20px; padding-top: 10px; }
+.overlay-header img {
+    height: 50px; width: auto; background: rgba(255,255,255,0.1);
+    padding: 5px; border-radius: 6px;
+}
+.header-text h2 { font-size: 1.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
+
+/* --- PROGRESS BAR / TIMELINE (OPRAVENO) --- */
+.overlay-bottom { display: flex; flex-direction: column; gap: 10px; width: 100%; }
+
+#current-program-title {
+    font-size: 1.1rem; color: var(--accent); font-weight: 600;
+    text-shadow: 0 2px 4px rgba(0,0,0,1); margin-left: 2px;
+}
+
+.epg-timeline-wrapper { display: flex; align-items: center; gap: 15px; width: 100%; }
+#epg-start-time, #epg-stop-time { font-size: 0.85rem; font-weight: 600; color: #ddd; min-width: 40px; }
+
+/* HLAVNÍ KONTEJNER (BÍLÁ STATICKÁ ČÁRA) */
+.progress-container {
+    flex: 1;
+    height: 8px;
+    background: transparent !important; /* Odstraněno původní pozadí */
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+    user-select: none;
+    margin: 0 5px;
+    /* Zvětšení aktivní plochy pro myš zůstává */
+    border-top: 10px solid transparent;
+    border-bottom: 10px solid transparent;
+    background-clip: padding-box;
+    transition: height 0.2s;
+}
+.progress-container:hover { height: 10px; }
+
+/* ŠEDÁ LINKA (LIVE HRANA - kolik už v TV uběhlo) */
+.progress-bar-live {
+    position: absolute;
+    left: 0; 
+    top: 0; 
+    height: 100% !important;
+    background: rgba(255, 255, 255, 0.25) !important; 
+    border-radius: 4px;
+    z-index: 1;
+    pointer-events: none;
+    width: 0%; /* Ovládá JS */
+    min-height: 8px; /* Zásadní pro zobrazení */
+}
+
+/* ČERVENÁ LINKA (POZICE DIVÁKA - posouvající se) */
+.progress-bar {
+    position: absolute;
+    left: 0; 
+    top: 0; 
+    height: 100% !important;
+    background: var(--accent) !important;
+    border-radius: 4px;
+    z-index: 2; 
+    width: 0%; /* Ovládá JS */
+    box-shadow: 1px 0 5px rgba(229, 9, 20, 0.5);
+    min-height: 8px; /* Zásadní pro zobrazení */
+}
+
+/* Kolečko (Koule) na konci červené čáry */
+.progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -7px; 
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px; 
+    height: 12px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    z-index: 3;
+}
+
+.progress-container:hover .progress-bar::after { 
+    transform: translateY(-50%) scale(1.1);
+}
+
+.progress-bar-static {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%;
+    /* Barvu jsem dal výraznější, abys ji viděl, pak si ji uber */
+    background: rgba(255, 255, 255, 0.05) !important; 
+    border-radius: 4px;
+    z-index: 0; 
+    pointer-events: none;
+    /* TOTO CHYBĚLO - bez toho má div výšku 0px */
+    min-height: 8px; 
+}
+
+/* Hover indikátor času nad osou */
+.hover-time-indicator {
+    position: absolute;
+    bottom: 30px;
+    transform: translateX(-50%);
+    background: #fff;
+    color: #000;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: none;
+    pointer-events: none;
+    z-index: 30;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+/* --- CONTROLS --- */
+.controls-main { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; }
+.controls-left, .controls-right { display: flex; align-items: center; gap: 15px; }
+
+button {
+    background: none; border: none; color: white; cursor: pointer;
+    padding: 5px; transition: transform 0.1s, color 0.1s;
+}
+button:hover { color: var(--accent); transform: scale(1.15); }
+
+.skip-btn { display: flex; flex-direction: column; align-items: center; }
+.skip-btn span { font-size: 0.6rem; margin-top: -2px; opacity: 0.8; }
+
+/* --- MODERNÍ ZVUK (KLIKACÍ BOX) --- */
+.volume-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+/* Skleněný box - v základu skrytý a posunutý níž */
+/* --- ÚPRAVA OVLÁDÁNÍ ZVUKU --- */
+.volume-slider-container {
+    position: absolute;
+    bottom: calc(100% + 15px);
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px 15px;
+    width: 160px;
+    display: none; /* V základu skryto */
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+    z-index: 10000;
+}
+
+/* Třída pro otevření zvuku */
+.volume-slider-container.show {
+    display: flex;
+    /* Použijeme tvou animaci, ale musíme zachovat translateX(-50%), aby byl centrovaný */
+    animation: volumeSlideIn 0.3s ease-out forwards;
+}
+
+/* Třída pro zavření zvuku */
+.volume-slider-container.hide {
+    display: flex;
+    animation: volumeSlideOut 0.3s ease-in forwards;
+}
+
+/* Specifické keyframes pro zvuk (kvůli vycentrování přes translateX) */
+@keyframes volumeSlideIn {
+    from { opacity: 0; transform: translateX(-50%) translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes volumeSlideOut {
+    from { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    to { opacity: 0; transform: translateX(-50%) translateY(30px) scale(0.98); }
+}
+
+#volume-slider {
+    -webkit-appearance: none;
+    appearance: none; /* Standardní zápis */
+    width: 100%;
+    height: 10px;
+    background: transparent; /* Pozadí pořešíme v tracku níže */
+    outline: none;
+    cursor: pointer;
+    margin: 0;
+}
+
+/* --- DRÁHA (TRACK) - TOHLE JE TA OPRAVA --- */
+
+/* Pro Chrome, Safari, Edge, Opera */
+#volume-slider::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px; /* Tady se tvoří ta "pilulka" */
+    border: none;
+}
+
+/* Pro Firefox */
+#volume-slider::-moz-range-track {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 20px;
+    border: none;
+}
+
+/* --- KULIČKA (THUMB) --- */
+
+/* Pro Chrome, Safari, Edge */
+#volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 15px;
+    width: 15px;
+    background: rgba(255, 255, 255, 0.65); /* ZÁKLAD: Viditelnější, ale stále soft */
+    border-radius: 50%;
+    margin-top: -2px;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+/* Stav při najetí nebo při kliknutí (posouvání) */
+#volume-slider:hover::-webkit-slider-thumb,
+#volume-slider:active::-webkit-slider-thumb {
+    background: rgba(255, 255, 255, 0.9); /* AKTIVNÍ: Skoro bílá, ale stále s 10% průhledností */
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Pro Firefox */
+#volume-slider::-moz-range-thumb {
+    height: 18px;
+    width: 18px;
+    background: rgba(255, 255, 255, 0.65); /* ZÁKLAD */
+    border-radius: 50%;
+    border: none;
+    box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+#volume-slider:hover::-moz-range-thumb,
+#volume-slider:active::-moz-range-thumb {
+    background: rgba(255, 255, 255, 0.9); /* AKTIVNÍ */
+    transform: scale(1.1);
+}
+
+/* --- LIVE STATUS & DOT --- */
+#status-msg {
+    font-size: 0.8rem; font-weight: 700; color: #fff;
+    background: rgba(255,0,0,0.2); padding: 2px 8px; border-radius: 4px;
+    display: flex; align-items: center; gap: 6px; text-transform: uppercase;
+    position: relative; overflow: hidden; z-index: 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+#status-msg.recording-mode { background: rgba(120, 120, 120, 0.4); }
+#status-msg.recording-mode .dot { background: #bbb; box-shadow: none; }
+#status-msg.recording-mode .dot::after { display: none; }
+
+.dot {
+    height: 7px; width: 7px; background: #ff0000;
+    border-radius: 50%; display: inline-block; position: relative;
+    box-shadow: 0 0 4px rgba(255, 0, 0, 0.8); flex-shrink: 0;
+}
+
+.dot::after {
+    content: ''; position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%); width: 100%; height: 100%;
+    background: rgba(255, 0, 0, 0.9); border-radius: 50%;
+    filter: blur(4px); z-index: -1;
+    animation: live-breathe-visible 2.5s ease-in-out infinite;
+}
+
+@keyframes live-breathe-visible {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.1; }
+    50% { transform: translate(-50%, -50%) scale(8); opacity: 0.5; }
+}
+
+.badge { padding: 3px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; background: var(--accent); margin-left: 10px; display: none;}
+
+/* --- INDICATORS LAYER (Zjednodušené bez kruhů) --- */
+.indicators-layer { 
+    position: absolute; 
+    inset: 0; 
+    pointer-events: none; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    z-index: 15; 
+}
+
+.side-indicator {
+    position: absolute; 
+    width: 40%; 
+    height: 100%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    opacity: 0; 
+    transition: opacity 0.3s ease;
+}
+
+/* Jemné stíny po stranách můžeme nechat pro čitelnost textu, nebo je smazat úplně */
+.side-indicator.left { left: 0; background: linear-gradient(to right, rgba(0,0,0,0.3) 0%, transparent 100%); }
+.side-indicator.right { right: 0; background: linear-gradient(to left, rgba(0,0,0,0.3) 0%, transparent 100%); }
+
+.side-indicator.animating { opacity: 1; }
+
+/* ODSTRANĚNÍ KRUHU A POZADÍ */
+.side-indicator .indicator-content {
+    background: none;        /* Odstraněno bílé pozadí */
+    backdrop-filter: none;   /* Odstraněn blur */
+    border: none;            /* Odstraněn rámeček */
+    filter: drop-shadow(0 0 10px rgba(0,0,0,0.5)) drop-shadow(0 0 30px rgba(0,0,0,0.5));
+    color: white;
+    display: flex; 
+    flex-direction: column; 
+    align-items: center; 
+    justify-content: center;
+    text-shadow: 0 0 15px rgba(0,0,0,0.8); /* Přidán stín pro čitelnost na světlých scénách */
+}
+
+/* Ikona Lucide v indikátoru */
+.side-indicator .indicator-content i {
+    width: 60px !important;
+    height: 60px !important;
+    stroke-width: 1.5px;
+}
+
+/* Text 10s pod ikonou */
+.side-indicator .indicator-content span {
+    font-size: 0.7rem;
+    font-weight: 200;
+    margin-top: 5px;
+}
+
+/* Úprava animací - teď se to jen jemně hýbe a mizí */
+@keyframes skip-left-pulse {
+    0% { transform: translateX(20px); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateX(-20px); opacity: 0; }
+}
+@keyframes skip-right-pulse {
+    0% { transform: translateX(-20px); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translateX(20px); opacity: 0; }
+}
+
+/* Středový indikátor (Play/Pause) taky bez kruhu */
+/* --- RYCHLÝ A SMOOTH SYMETRICKÝ INDIKÁTOR (OPRAVENÝ STÍN) --- */
+.center-indicator {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 100;
+}
+
+.center-indicator .indicator-content { 
+    background: none !important; /* Vynucení průhledného pozadí */
+    border: none !important;
+    color: white;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    
+    opacity: 0; 
+    transform: scale(0.3); 
+    
+    transition: 
+        transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+        opacity 0.2s cubic-bezier(0.4, 0, 0.2, 1), 
+        filter 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* AKTIVNÍ STAV */
+.center-indicator.active .indicator-content {
+    opacity: 1;
+    transform: scale(1);
+
+}
+
+/* Cílení na ikonu uvnitř pro správnou velikost */
+.center-indicator .indicator-content i,
+.center-indicator .indicator-content svg {
+    width: 60px !important;  /* Trochu jsem zvětšil pro lepší viditelnost */
+    height: 60px !important;
+    stroke-width: 1.2px !important;
+    /* Odstranění případných box-shadow z jiných částí CSS */
+    box-shadow: none !important; 
+}
+
+/* --- SIDEBAR & CHANNELS --- */
+.sidebar { width: 350px; background: var(--sidebar-bg); display: flex; flex-direction: column; border-left: 1px solid #222; }
+.brand { font-size: 1.5rem; font-weight: bold; padding: 20px; color: var(--accent); }
+.brand b { color: #fff; }
+#search-box { width: 90%; margin: 0 auto 10px; display: block; padding: 10px; background: #222; border: 1px solid #333; color: #fff; border-radius: 6px; }
+.channel-list-container { flex: 1; overflow-y: auto; padding: 10px; }
+.channel-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card-bg); border-radius: 8px; cursor: pointer; margin-bottom: 5px; border: 2px solid transparent; }
+.channel-item.active { border-color: var(--accent); background: #252525; }
+.channel-item img { width: 60px; height: 35px; object-fit: contain; background: #333; border-radius: 4px; }
+.channel-info { flex: 1; overflow: hidden; }
+.channel-name { font-size: 0.9rem; font-weight: 600; display: block; }
+.epg-now { font-size: 0.75rem; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.epg-mini-progress { width: 100%; height: 3px; background: rgba(255,255,255,0.1); margin-top: 6px; border-radius: 2px; overflow: hidden; }
+.epg-bar-inner { height: 100%; background: var(--accent); width: 0%; }
+
+/* --- MODERNÍ QUALITY DROPDOWN (NÁHRADA ZA PŮVODNÍ KONEC SOUBORU) --- */
+
+/* Obal pro tlačítko, aby dropdown věděl, odkud se má odrazit */
+.quality-wrapper {
+    position: relative;
+    z-index: 25;
+}
+
+/* --- ÚPRAVA QUALITY DROPDOWN --- */
+.quality-dropdown {
+    position: absolute;
+    bottom: calc(100% + 15px);
+    right: 0;
+    background: rgba(15, 15, 15, 0.85);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px;
+    min-width: 200px;
+    display: none; /* Skryto v základu */
+    flex-direction: column;
+    gap: 4px;
+    z-index: 9999 !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7);
+    
+    /* Odstraň původní animation: menuAppear a nahraď tímto: */
+}
+
+/* Třída pro zobrazení (otevření) */
+.quality-dropdown.show {
+    display: flex;
+    animation: epgSlideIn 0.3s ease-out forwards;
+}
+
+/* Třída pro skrytí (zavření) */
+.quality-dropdown.hide {
+    display: flex; /* Musí zůstat flex, aby byla vidět animace */
+    animation: epgSlideOut 0.3s ease-in forwards;
+}
+
+/* Ujisti se, že Keyframes máš v CSS dostupné (můžeš je dát na konec style.css) */
+@keyframes epgSlideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes epgSlideOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(30px) scale(0.98); }
+}
+
+.quality-dropdown.show {
+    display: flex;
+}
+
+/* Nadpis uvnitř menu */
+.dropdown-header {
+    padding: 10px 16px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 4px;
+}
+
+/* Styl pro položku v seznamu */
+.quality-option {
+    padding: 10px 15px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 6px !important;
+    transition: background 0.2s;
+}
+
+.quality-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* --- TOHLE JE KLÍČOVÉ --- */
+.quality-option.active {
+    color: #e50914; /* Netflix červená */
+    font-weight: bold;
+    background: rgba(229, 9, 20, 0.1); /* Jemný červený nádech */
+}
+
+
+/* Animace vyskočení menu */
+@keyframes menuAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* --- FINÁLNÍ OPRAVA SCROLLBARU --- */
+
+/* 1. Šířka zůstává */
+.channel-list-container::-webkit-scrollbar {
+    width: 12px;
+}
+
+/* 2. Odstranění šipek (Důležité pro čistý design) */
+.channel-list-container::-webkit-scrollbar-button {
+    display: none !important;
+}
+
+/* 3. Dráha (track) - pozadí, po kterém jezdec jezdí */
+.channel-list-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3) !important;
+    border-radius: 20px;
+}
+
+/* 4. POSUVNÍK - ZÁKLADNÍ STAV (Tady nesmí být červená!) */
+.channel-list-container::-webkit-scrollbar-thumb {
+    /* Nastavíme jemnou šedou, aby byl posuvník vidět, ale nerušil */
+    background-color: rgba(255, 255, 255, 0.1) !important; 
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    /* Plynulý přechod (v Chromiu funguje jen na barvu) */
+    transition: background-color 0.3s ease;
+}
+
+/* 5. HOVER STAV - Tady se to změní na tvou červenou */
+/* Chceš, aby to zčervenalo, když najedeš na CELOU LIŠTU? Použijeme tento selektor: */
+.channel-list-container:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3) !important; /* Trochu víc zvýraznit při najetí na seznam */
+}
+
+/* 6. HOVER STAV PŘÍMO NA JEZDEC - Tady to bude tvá ostrá červená */
+.channel-list-container::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent) !important; /* Tvůj červený accent #e50914 */
+}
+
+/* 7. ACTIVE - Při kliknutí a tažení */
+.channel-list-container::-webkit-scrollbar-thumb:active {
+    background-color: #b20710 !important; /* Trochu tmavší červená při stisknutí */
+}
+
+/* --- FINÁLNÍ MODERNÍ INFO PANEL --- */
+.program-info-container {
+    margin-bottom: 10px; /* Přisunuto blíže k timeline */
+    max-width: 800px;
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#current-program-title {
+    font-size: 1.5rem;
+    color: #fff;
+    font-weight: 700;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    margin: 0;
+}
+
+/* Tlačítko jako čistý text */
+#show-more-btn {
+    background: rgba(255, 255, 255, 0.08); /* Jemný skleněný podklad */
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 5px;
+    width: fit-content;
+    
+    /* Změna transition z 0.1s na 0.3s pro hladký průběh */
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Důležité: přebijeme ten globální transform */
+    transform: scale(1); 
+}
+#show-more-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+    
+    /* Místo 1.15 dáme jen jemných 1.03 */
+    transform: translateY(-1px) scale(1.03); 
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Hlavní kontejner popisu - tvůj plynulý výsun */
+#program-details-wrapper {
+    position: relative;
+    width: 100%;
+    margin-top: 10px; /* Mezera od tlačítka směrem dolů */
+    margin-bottom: 10px; /* Mezera k časové ose */
+    
+    /* NETFLIX GLASS STYLE */
+    background: rgba(10, 10, 10, 0.7); /* Více průhledné (0.7 místo 0.95) */
+    backdrop-filter: blur(20px) saturate(180%); /* Rozmazání + zvýraznění barev videa pod tím */
+    -webkit-backdrop-filter: blur(20px) saturate(180%); /* Podpora pro Safari */
+    
+    border: 1px solid rgba(255, 255, 255, 0.1); /* Velmi jemná linka pro hloubku */
+    border-radius: 12px;
+    z-index: 2100;
+    /* Animace */
+    max-height: 500px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 20px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Stín pod oknem */
+}
+
+/* Stav zavřeno */
+#program-details-wrapper.collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    transform: translateY(40px); /* Odskočí o 40px dolů */
+    border-color: transparent;
+    pointer-events: none;
+}
+
+
+
+/* ROZLOŽENÍ ELEMENTŮ (Vstříknutých přes JS) */
+.preview-content-horizontal {
+    display: flex;
+    gap: 25px;
+    align-items: flex-start;
+}
+
+.preview-image-container-new {
+    position: relative;
+    width: 280px; /* Trochu větší náhled, když máme šířku */
+    height: 157px;
+    flex-shrink: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+}
+
+#details-program-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-time-badge {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.preview-info {
+    flex: 1;
+}
+
+#details-program-title {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 12px 0;
+    color: var(--accent, #e50914);
+}
+
+#details-program-text {
+    font-size: 15px;
+    color: #ccc;
+    line-height: 1.6;
+    max-height: 120px;
+    overflow-y: auto;
+    scrollbar-width: none;
+}
+#details-program-text::-webkit-scrollbar { display: none; }
+
+/* --- DEFINITIVNÍ FIX CENTROVÁNÍ LOADERU --- */
+#video-loader {
+    display: none; /* Zapíná JS (nastavením na flex) */
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    
+    /* Vycentruje vnitřní .spinner-container */
+    justify-content: center;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* Tento kontejner drží kolečko i text pod sebou a zajistí jejich vycentrování */
+.spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;    /* Horizontální střed pro děti */
+    justify-content: center;
+    text-align: center;
+}
+
+.main-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid rgba(255, 255, 255, 0.1);
+    border-top: 5px solid var(--accent); /* Červená čára nahoře pro lepší vizuální střed */
+    border-radius: 50%;
+    
+    /* Reset marginů a mezera pod kolečkem */
+    margin: 0 0 15px 0 !important; 
+    
+    /* Animace a výkon */
+    animation: spin 0.8s linear infinite;
+    -webkit-animation: spin 0.8s linear infinite;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    flex-shrink: 0;
+}
+
+.loader-text {
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.8);
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* Animace (standardní i pro Safari) */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@-webkit-keyframes spin {
+    from { -webkit-transform: rotate(0deg); }
+    to { -webkit-transform: rotate(360deg); }
+}
+
+
+

@@ -1,0 +1,577 @@
+/* --- EPG GRID PANEL (Netflix Style) --- */
+#epg-grid-overlay {
+    position: fixed;
+    bottom: 110px; /* Umístění nad ovládací lištou */
+    left: 20px;
+    right: 370px; /* Respektuje tvůj pravý sidebar */
+    height: 60vh;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(25px) saturate(160%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.9);
+}
+
+/* --- ANIMACE --- */
+#epg-grid-overlay.show { 
+    display: flex; 
+    animation: epgSlideIn 0.3s ease-out forwards; 
+}
+
+#epg-grid-overlay.hide { 
+    animation: epgSlideOut 0.3s ease-in forwards; 
+}
+
+@keyframes epgSlideIn {
+    from { opacity: 0; transform: translateY(30px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes epgSlideOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(30px) scale(0.98); }
+}
+
+.epg-grid-header {
+    padding: 15px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.03);
+}
+
+.epg-title { color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+
+/* Kontejner mřížky */
+.epg-grid-scroll-area {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    scroll-behavior: auto; 
+}
+
+/* --- ČASOVÁ OSA (TIMELINE) --- */
+.epg-time-track {
+    display: flex;
+    height: 35px;
+    position: sticky;
+    top: 0;
+    z-index: 1000; 
+    background: #0a0a0a;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    /* Šířka se přizpůsobí obsahu (spacer + hodiny) */
+    width: fit-content;
+}
+
+.epg-time-spacer {
+    width: 220px;      /* Musí sedět s JS */
+    min-width: 220px;
+    flex-shrink: 0;
+    background: #0a0a0a;
+    position: sticky;
+    left: 0;
+    z-index: 1100;
+}
+
+.epg-channel-sticky img { 
+    width: 45px; 
+    height: 30px; 
+    object-fit: contain; 
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    margin-right: 12px; /* Tímto odtlačíš text od loga */
+    flex-shrink: 0;    /* Zabrání deformaci loga, když je název moc dlouhý */
+}
+
+/* Základ pro všechny bloky času (výchozí pro půlhodiny) */
+.epg-hour {
+    width: 150px;
+    min-width: 150px;
+    flex-shrink: 0;
+    font-size: 10px;
+    color: #888; /* Tmavší barva pro půlhodiny */
+    border-left: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-left: 8px;
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+}
+
+/* Pokud JS vygeneruje blok, který není půlhodina (tedy končí na :00) */
+/* Toto v CSS samo o sobě nejde podle textu, takže použijeme tvůj JS k přidání třídy */
+.epg-hour.main-hour {
+    color: #fff !important;
+    font-size: 11px !important;
+    font-weight: 600;
+    border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* --- ŘÁDKY A KANÁLY --- */
+#epg-rows-container {
+    position: relative;
+    width: fit-content; /* Důležité: kontejner se roztáhne podle obsahu hodin */
+    min-width: 100%;
+}
+
+.epg-row {
+    display: flex;
+    position: relative;
+    height: 60px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    /* Přidáme pozadí, aby linky hodin neprosvítaly pod prázdným místem */
+    background: transparent; 
+}
+
+.epg-channel-sticky {
+    width: 220px;      /* Musí sedět s JS */
+    min-width: 220px;
+    background: #111;
+    position: sticky;
+    left: 0 !important;
+    z-index: 900;
+
+    padding: 0 15px;   /* Trochu víc místa po stranách */
+    border-right: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 5px 0 10px rgba(0,0,0,0.5);
+    height: 100%; /* Aby border a pozadí seděly na celou výšku řádku */
+    display: flex;
+    align-items: center; /* Vertikální centr loga a názvu */
+    padding: 0 15px;
+}
+
+.epg-channel-sticky img { width: 45px; height: 30px; object-fit: contain; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); }
+.epg-channel-sticky span { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* --- PROGRAMOVÉ BOXY --- */
+.epg-programs-row {
+    display: block;
+    position: relative;
+    height: 100%;
+    /* Šířka musí odpovídat 24 hodinám: 24 * 60 * 5px = 7200px */
+    width: 7200px; 
+    background: rgba(255,255,255,0.01);
+    
+    /* TATO ČÁST JE KLÍČOVÁ: */
+    overflow: hidden; 
+}
+
+.epg-box {
+    position: absolute;
+    /* TOTO POSUNE BOX DO STŘEDU (60px řádek - 45px box = 15px / 2) */
+    top: 7.5px; 
+    height: 45px;
+    background: rgba(40, 40, 40, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    overflow: hidden;
+}
+
+.epg-box.past {
+    background: rgba(20, 20, 20, 0.5); /* Tmavší a průhlednější */
+    opacity: 0.6;
+}
+.epg-box.past .title {
+    color: #aaa; /* Vybledlý text */
+}
+
+.epg-box:hover { 
+    background: #252525; 
+    border-color: rgba(255,255,255,0.4); 
+    z-index: 20;
+}
+
+.epg-box.past:hover {
+    opacity: 1;
+    background: rgba(50, 50, 50, 0.9);
+    border-color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+}
+
+/* 1. Všechny běžící pořady budou mít jen jemně odlišné pozadí (nebo stejné jako ostatní) */
+.epg-box.active {
+    background: rgba(60, 60, 60, 0.9) !important; /* Trochu světlejší než zbytek */
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: inset 0 -3px 0 rgba(255, 255, 255, 0.3); /* Jemná bílá linka vespod */
+    cursor: pointer;
+}
+
+.epg-box.past, .epg-box:not(.active) {
+    cursor: default; /* Nebo 'help' pokud tam chceš dát info o archivu */
+}
+
+/* 2. Speciální třída pro pořad, který právě SLEDUJEŠ */
+.epg-box.watching {
+    background: rgba(229, 9, 20, 0.25) !important; /* Průhledná červená */
+    border: 1px solid var(--accent) !important;   /* Červené ohraničení */
+    box-shadow: inset 0 -3px 0 rgba(229, 9, 20, 0.3); /* Jemná bílá linka vespod */
+    z-index: 10;
+    opacity: 1 !important;
+}
+
+/* Pokud chceš, aby i text v právě sledovaném pořadu byl jasnější */
+.epg-box.watching .title {
+    color: #fff;
+    text-shadow: 0 0 10px rgba(229, 9, 20, 0.1);
+}
+
+/* Ukazatel, že na LIVE pořad lze kliknout pro spuštění */
+.epg-box.active:hover {
+    background: rgba(68, 68, 68, 0.9) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+    cursor: pointer;
+    filter: brightness(1.2);
+}
+
+.epg-box.watching:hover {
+    background: rgba(255, 0, 13, 0.3) !important;
+    border-color: #e50914 !important;
+    cursor: pointer;
+    filter: brightness(1.2);
+}
+
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.epg-box .title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; /* Přidá "..." pokud je pořad krátký */
+    display: block;
+    width: 100%;
+    margin-bottom: 2px;
+}
+
+.epg-box .time {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.5);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* --- ČERVENÁ LINKA "TEĎ" --- */
+#epg-grid-now-line {
+    position: absolute;
+    top: 0;
+    height: 100%; 
+    width: 2px;
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent);
+    z-index: 80; /* Musí být nad pořady, ale pod timeline headerem */
+    pointer-events: none;
+}
+
+/* --- SCROLLBAR PRO EPG GRID --- */
+.epg-grid-scroll-area::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+.epg-grid-scroll-area::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+.epg-grid-scroll-area::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.epg-grid-scroll-area::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+}
+
+.epg-grid-scroll-area:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.epg-grid-scroll-area::-webkit-scrollbar-thumb:hover {
+    background-color: var(--accent);
+}
+
+.epg-header-left {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+#epg-days-container {
+    display: flex;
+    gap: 10px;
+}
+
+.epg-day-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(255, 255, 255, 0.05);
+    min-width: 60px;
+}
+
+.epg-day-item:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.epg-day-item.active {
+    background: var(--accent);
+    box-shadow: 0 4px 12px rgba(229, 9, 20, 0.3);
+}
+
+.epg-day-item .day-name {
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+
+.epg-day-item.active .day-name { opacity: 1; }
+
+.epg-day-item .day-date {
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+/* --- OPRAVA FULLSCREEN REŽIMU --- */
+
+/* 1. Zajistíme, aby se EPG ve fullscreenu necpalo přes celou plochu */
+#video-wrapper:fullscreen #epg-grid-overlay {
+    position: absolute;
+    /* Umístění: 120px odspodu (nad lištu), 40px od stran */
+    bottom: 120px; 
+    top: auto; 
+    left: 40px;
+    right: 40px;
+    
+    /* Výška: 50% obrazovky (půlka) */
+    height: 60vh; 
+    width: auto;
+    
+    /* Maximální z-index, aby byl nad videem, ale lišta musí mít ještě víc nebo být potomek */
+    z-index: 2147483647; 
+    background: rgba(10, 10, 10, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 2. Aby spodní lišta nezmizela, musíme jí ve fullscreenu taky zvednout z-index */
+#video-wrapper:fullscreen .overlay-bottom {
+    z-index: 2147483647; /* Stejný nebo vyšší než EPG */
+}
+
+/* 3. Úprava scrollovací oblasti uvnitř EPG pro fullscreen */
+#video-wrapper:fullscreen .epg-grid-scroll-area {
+    /* Odečteme výšku hlavičky EPG (cca 70px) */
+    max-height: calc(60vh - 70px); 
+}
+
+/* 4. Pokud máš pravý sidebar, který chceš ve fullscreenu ignorovat (aby EPG bylo přes celou šířku) */
+#video-wrapper:fullscreen #epg-grid-overlay {
+    right: 40px !important; 
+}
+
+/* 1. Zvýraznění bočního (sticky) panelu, když kanál hraje */
+.epg-row:has(.watching) .epg-channel-sticky,
+.epg-row.active-row-highlight .epg-channel-sticky {
+    background: #1a1a1a !important; /* Mírně světlejší než zbytek */
+    border-left: 4px solid var(--accent); /* Červený proužek, který je pořád vidět */
+    box-shadow: 5px 0 15px rgba(0,0,0,0.5); /* Oddělení od mřížky */
+    z-index: 10;
+}
+
+/* 2. Zvýraznění textu v tomto panelu */
+.epg-row:has(.watching) .epg-channel-sticky span,
+.epg-row.active-row-highlight .epg-channel-sticky span {
+    color: var(--accent);
+    font-weight: bold;
+}
+
+/* 3. Aby pozadí řádku nezanikalo při scrollu */
+.epg-row:has(.watching),
+.epg-row.active-row-highlight {
+    background: rgba(229, 9, 20, 0.05) !important;
+    /* Zde už nedáváme border-left, protože by odjel pryč */
+}
+
+/* 4. Tato oblast musí zůstat relativní pro JS výpočty */
+.epg-grid-scroll-area {
+    position: relative; 
+    overflow: auto;
+    height: 100%;
+}
+
+
+
+/* --- INFO MENU (Pevně nad EPG mřížkou) --- */
+#epg-grid-overlay {
+    position: fixed;
+    /* Důležité: overflow musí být visible, aby info panel mohl vyčnívat NAD mřížku */
+    overflow: visible !important; 
+}
+
+.epg-preview-popup {
+    position: absolute;
+    /* Umístění přesně nad horní hranu EPG mřížky */
+    top: -15px; 
+    left: 0;
+    right: 0;
+    transform: translateY(-100%); /* Posune prvek o jeho vlastní výšku nahoru */
+    
+    background: rgba(10, 10, 10, 0.95);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 20px;
+    z-index: 2100;
+    display: none;
+    opacity: 0;
+    box-shadow: 0 -15px 40px rgba(0,0,0,0.6);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.epg-preview-popup.show {
+    display: block;
+    opacity: 1;
+}
+
+/* Rozvržení obsahu: Obrázek vlevo, text vpravo */
+.preview-content-horizontal {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.preview-image-container-new {
+    position: relative;
+    width: 240px; /* Pevná šířka náhledu */
+    height: 135px; /* Formát 16:9 */
+    flex-shrink: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #000;
+}
+
+#preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.preview-time-badge {
+    position: absolute;
+    bottom: 8px;
+    right: 8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.preview-info {
+    flex: 1; /* Zabere zbytek místa */
+    padding-top: 5px;
+}
+
+#preview-title {
+    margin: 0 0 10px 0;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    line-height: 1.2;
+}
+
+#preview-desc {
+    font-size: 14px;
+    color: #bbb;
+    line-height: 1.5;
+    
+    /* Standardní vlastnost (budoucnost) */
+    line-clamp: 4; 
+    
+    /* Webkit vlastnosti (současnost a kompatibilita) */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    
+    overflow: hidden;
+}
+
+/* Úprava pro fullscreen: aby se info panel neztratil */
+#video-wrapper:fullscreen .epg-preview-popup {
+    background: rgba(15, 15, 15, 0.98);
+}
+
+.fav-btn {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    color: #555; /* Prázdná hvězda */
+    transition: all 0.2s ease;
+}
+
+
+
+.fav-btn.active {
+    color: #ffcc00 !important; /* Zlatá hvězda */
+    fill: #ffcc00; /* Vyplní vnitřek hvězdy */
+    transform: scale(0.9); /* Při stisku se mírně smrští - skvělá odezva na prst */
+    transition: transform 0.1s;
+}
+
+/* HVĚZDIČKA V ROHU */
+.fav-btn-epg {
+    position: absolute;
+    top: 3px;           /* Kousek odshora */
+    left: 8px;         /* Kousek od pravé hrany sticky sloupce */
+    font-size: 10px;    /* Malinká */
+    color: #ffcc00;
+    cursor: pointer;
+    z-index: 1000;      /* Úplně nahoře */
+    display: none;      /* Schovaná u neoblíbených */
+}
+
+.fav-btn-epg.active {
+    display: block;     /* Viditelná jen s třídou active */
+    color: #ffcc00;
+    text-shadow: 0 0 4px #000;
+}
+
+.fav-btn-epg.active {
+        display: block !important; 
+        left: 4px !important;    /* Na mobilu ji dáme víc ke kraji */
+        top: 2px !important;
+        font-size: 12px !important; /* Může být i trochu větší, aby šla trefit prstem */
+        color: #f1c40f !important;    /* Žlutá barva */
+        fill: #f1c40f !important;     /* Výplň pro SVG ikony (Lucide) */
+        opacity: 1 !important;  
+    }
+
+    /* Zajištění, že se barva nezmění při "watching" stavu */
+    .epg-row:has(.watching) .fav-btn-epg.active,
+    .epg-row.active-row-highlight .fav-btn-epg.active {
+        color: #f1c40f !important;
+        fill: #f1c40f !important;
+    }
