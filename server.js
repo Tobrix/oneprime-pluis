@@ -122,20 +122,23 @@ fastify.register(require('@fastify/http-proxy'), {
     upstream: 'http://94.241.90.115:8889',
     prefix: '/oneplay',
     replyOptions: { 
-        rewriteRequestHeaders: (req, headers) => {
-            return { 
-                ...headers, 
-                // Tady nastavujeme přesně to, co vyžaduje tvůj playlist
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0',
-                'Accept': '*/*',
-                'Accept-Encoding': 'gzip, deflate, br, zstd',
-                'host': '94.241.90.115:8889'
-            };
-        } 
+        rewriteRequestHeaders: (req, headers) => ({ 
+            ...headers, 
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0',
+            'host': '94.241.90.115:8889',
+            'connection': 'keep-alive' // Udržuje spojení aktivní
+        }),
+        // KLÍČOVÉ NASTAVENÍ PRO STABILITU:
+        getUpstream: (req, base) => base,
+        undici: {
+            bodyTimeout: 0,    // Vypne timeout pro stahování dat (pro iOS kritické)
+            headersTimeout: 0, // Vypne timeout pro hlavičky
+            keepAliveTimeout: 60 * 1000 // Udrží spojení naživu 1 minutu
+        }
     }
 });
 
-// Musíme přidat i proxy pro /play/ cestu, kterou používají tvoje URL v playlistu
+// Proxy pro /play
 fastify.register(require('@fastify/http-proxy'), {
     upstream: 'http://94.241.90.115:8889',
     prefix: '/play',
@@ -143,8 +146,14 @@ fastify.register(require('@fastify/http-proxy'), {
         rewriteRequestHeaders: (req, headers) => ({ 
             ...headers, 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0',
-            'host': '94.241.90.115:8889'
-        }) 
+            'host': '94.241.90.115:8889',
+            'connection': 'keep-alive'
+        }),
+        undici: {
+            bodyTimeout: 0,
+            headersTimeout: 0,
+            keepAliveTimeout: 60 * 1000
+        }
     }
 });
 
@@ -161,6 +170,7 @@ const start = async () => {
     }
 };
 start();
+
 
 
 
