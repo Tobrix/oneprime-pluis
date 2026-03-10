@@ -1,7 +1,7 @@
 let hls;
 
 let isArchiveMode = false;
-let isUserBehind = false; // Pojistka: uživatel ručně skočil zpět
+let isUserBehind = false; // Pojistka: uživatel ručně skočil zpětt
 let isFirstLoad = true;
 const video = document.getElementById('video');
 const videoWrapper = document.getElementById('video-wrapper');
@@ -1480,6 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     loadPlaylist();
 });
+
 
 
 
