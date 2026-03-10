@@ -152,7 +152,7 @@ fastify.register(require('@fastify/http-proxy'), {
 const start = async () => {
     try {
         // Port si vezme z prostředí (Northflank), nebo použije 3000
-        const port = process.env.PORT || 3000;
+        const port = process.env.PORT || 8080;
         await fastify.listen({ port: parseInt(port), host: '0.0.0.0' });
         console.log(`🚀 Server běží na portu ${port}`);
     } catch (err) {
@@ -161,6 +161,7 @@ const start = async () => {
     }
 };
 start();
+
 
 
 
