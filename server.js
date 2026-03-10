@@ -1,10 +1,10 @@
 const fastify = require('fastify')({ logger: false });
 const axios = require('axios');
 const xml2js = require('xml2js');
-const path = require('path'); // Přidáno pro cesty k souborům
+const path = require('path');
 
+// Registrace CORS a statických souborů
 fastify.register(require('@fastify/cors'), { origin: "*" });
-
 fastify.register(require('@fastify/static'), {
     root: path.join(__dirname, ''), 
     prefix: '/', 
@@ -12,6 +12,7 @@ fastify.register(require('@fastify/static'), {
 
 let cachedEpg = [];
 
+// Funkce pro aktualizaci EPG
 async function updateEpg() {
     try {
         console.log('⏳ Stahuji EPG data...');
@@ -21,44 +22,34 @@ async function updateEpg() {
         
         if (result.tv && result.tv.programme) {
             cachedEpg = result.tv.programme;
-            
-            // Pomocná funkce pro tvůj formát YYYY-MM-DD
             const formatDate = (s) => `${s.substring(0,4)}-${s.substring(4,6)}-${s.substring(6,8)}`;
-
-            // Zjistíme unikátní dny v datech
             const rawDays = cachedEpg.map(p => p.$.start.substring(0, 8));
             const uniqueDays = [...new Set(rawDays)].sort();
             
             console.log(`✅ EPG aktualizováno (${cachedEpg.length} pořadů)`);
-            console.log(`📅 Dostupná data v souboru:`);
-            
-            uniqueDays.forEach(day => {
-                console.log(`   👉 ${formatDate(day)}`);
-            });
-            
+            uniqueDays.forEach(day => console.log(`   👉 ${formatDate(day)}`));
         }
     } catch (err) {
         console.error('❌ Chyba EPG:', err.message);
     }
 }
 
-// Aktualizace každou hodinu
+// Interval pro EPG (každou hodinu)
 setInterval(updateEpg, 60 * 60 * 1000); 
 updateEpg();
 
+// Endpoint pro získání EPG dat
 fastify.get('/epg-data', async (request, reply) => {
     const queryId = decodeURIComponent(request.query.id);
     const isFull = request.query.full === 'true';
-    const queryDate = request.query.date; // Očekává YYYYMMDD
+    const queryDate = request.query.date; 
     
     if (!queryId || cachedEpg.length === 0) {
         return isFull ? [] : { title: "Program není k dispozici" };
     }
 
-    // 1. Najdeme VŠECHNY pořady pro daný kanál
     const channelProgrammes = cachedEpg.filter(p => p.$.channel === queryId);
 
-    // Pomocná funkce pro formátování dat z XML
     const formatProg = (p) => ({
         title: (typeof p.title[0] === 'object') ? p.title[0]._ : p.title[0],
         desc: p.desc ? ((typeof p.desc[0] === 'object') ? p.desc[0]._ : p.desc[0]) : "",
@@ -67,11 +58,8 @@ fastify.get('/epg-data', async (request, reply) => {
         image: (p.icon && p.icon[0].$) ? p.icon[0].$.src : ""        
     });
 
-    // 2. LOGIKA PRO MŘÍŽKU (isFull)
-    // V server.js najdi tuto část:
     if (isFull) {
         if (queryDate) {
-            // ZMĚNA: Filtrujeme pořady, které v daný den buď začínají, NEBO v něm končí
             const filtered = channelProgrammes.filter(p => {
                 const startsToday = p.$.start.startsWith(queryDate);
                 const stopsToday = p.$.stop.startsWith(queryDate);
@@ -82,8 +70,6 @@ fastify.get('/epg-data', async (request, reply) => {
         return channelProgrammes.map(formatProg);
     }
 
-    // 3. LOGIKA PRO "PRÁVĚ BĚŽÍ" (Sidebar / Player Info)
-    // VYNUCENÍ ČESKÉHO ČASU (i když server běží v cizině)
     const now = new Date();
     const czTime = new Intl.DateTimeFormat('cs-CZ', {
         timeZone: 'Europe/Prague',
@@ -94,30 +80,27 @@ fastify.get('/epg-data', async (request, reply) => {
 
     const t = {};
     czTime.forEach(({type, value}) => t[type] = value);
-    
-    // Formát XMLTV: YYYYMMDDHHMMSS
     const nowStr = `${t.year}${t.month}${t.day}${t.hour}${t.minute}${t.second}`;
 
     const current = channelProgrammes.find(p => {
-        // Očistíme start/stop od časových zón (vše po mezeře pryč)
         const start = p.$.start.split(' ')[0];
         const stop = p.$.stop.split(' ')[0];
         return nowStr >= start && nowStr <= stop;
     });
 
-    // PŘIDÁME HLAVIČKU PROTI CACHOVÁNÍ (aby mobil neukazoval stará data)
     reply.header('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
     if (current) {
         return formatProg(current);
     } else {
-        // Pokud nenajdeme přesný čas, zkusíme vzít první pořad, který teprve začne
         const upcoming = channelProgrammes.find(p => p.$.start.split(' ')[0] > nowStr);
         return upcoming ? formatProg(upcoming) : { title: "Program není k dispozici" };
     }
 });
 
-// Proxy pro streamy se správnými hlavičkami (vynuceno pro Oneplay server)
+// --- PROXY SEKCE SE STABILIZACÍ PRO IOS ---
+
+// Proxy pro /oneplay
 fastify.register(require('@fastify/http-proxy'), {
     upstream: 'http://94.241.90.115:8889',
     prefix: '/oneplay',
@@ -126,14 +109,13 @@ fastify.register(require('@fastify/http-proxy'), {
             ...headers, 
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:142.0) Gecko/20100101 Firefox/142.0',
             'host': '94.241.90.115:8889',
-            'connection': 'keep-alive' // Udržuje spojení aktivní
+            'connection': 'keep-alive' 
         }),
-        // KLÍČOVÉ NASTAVENÍ PRO STABILITU:
         getUpstream: (req, base) => base,
         undici: {
-            bodyTimeout: 0,    // Vypne timeout pro stahování dat (pro iOS kritické)
-            headersTimeout: 0, // Vypne timeout pro hlavičky
-            keepAliveTimeout: 60 * 1000 // Udrží spojení naživu 1 minutu
+            bodyTimeout: 0,    // Nekonečný timeout pro data (klíčové pro iOS)
+            headersTimeout: 0, 
+            keepAliveTimeout: 60000 
         }
     }
 });
@@ -152,15 +134,14 @@ fastify.register(require('@fastify/http-proxy'), {
         undici: {
             bodyTimeout: 0,
             headersTimeout: 0,
-            keepAliveTimeout: 60 * 1000
+            keepAliveTimeout: 60000
         }
     }
 });
 
-// --- KLÍČOVÁ ZMĚNA PRO NORTHFLANK ---
+// Start serveru
 const start = async () => {
     try {
-        // Port si vezme z prostředí (Northflank), nebo použije 3000
         const port = process.env.PORT || 3000;
         await fastify.listen({ port: parseInt(port), host: '0.0.0.0' });
         console.log(`🚀 Server běží na portu ${port}`);
@@ -170,7 +151,3 @@ const start = async () => {
     }
 };
 start();
-
-
-
-
